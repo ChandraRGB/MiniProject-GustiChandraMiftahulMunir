@@ -21,14 +21,17 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	tokoRepo := repository.NewTokoRepository(db)
+	alamatRepo := repository.NewAlamatRepository(db)
 
 	// Initialize usecases
 	authUC := usecase.NewAuthUsecase(userRepo, tokoRepo)
 	userUC := usecase.NewUserUsecase(userRepo)
+	alamatUC := usecase.NewAlamatUsecase(alamatRepo)
 
 	// Initialize handlers
 	authHandler := NewAuthHandler(authUC)
 	userHandler := NewUserHandler(userUC)
+	alamatHandler := NewAlamatHandler(alamatUC)
 
 	// Auth routes based on Postman collection
 	authGroup := app.Group("/auth")
@@ -39,6 +42,13 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	userGroup := app.Group("/user", middleware.JWTMiddleware())
 	userGroup.Get("/", userHandler.GetProfile)
 	userGroup.Put("/", userHandler.UpdateProfile)
+
+	alamatGroup := userGroup.Group("/alamat")
+	alamatGroup.Get("/", alamatHandler.GetMyAlamat)
+	alamatGroup.Get("/:id", alamatHandler.GetAlamatByID)
+	alamatGroup.Post("/", alamatHandler.CreateAlamat)
+	alamatGroup.Put("/:id", alamatHandler.UpdateAlamat)
+	alamatGroup.Delete("/:id", alamatHandler.DeleteAlamat)
 
 	// TODO: register other feature routes (user, toko, alamat, kategori, produk, trx)
 }
