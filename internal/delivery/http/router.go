@@ -3,6 +3,10 @@ package http
 import (
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
+
+	"github.com/chandraRGB/MiniProject-GustiChandraMiftahulMunir/internal/middleware"
+	"github.com/chandraRGB/MiniProject-GustiChandraMiftahulMunir/internal/repository"
+	"github.com/chandraRGB/MiniProject-GustiChandraMiftahulMunir/internal/usecase"
 )
 
 // RegisterRoutes registers all HTTP routes for the application.
@@ -14,5 +18,27 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 		})
 	})
 
-	// TODO: register other feature routes (auth, user, toko, alamat, kategori, produk, trx)
+	// Initialize repositories
+	userRepo := repository.NewUserRepository(db)
+	tokoRepo := repository.NewTokoRepository(db)
+
+	// Initialize usecases
+	authUC := usecase.NewAuthUsecase(userRepo, tokoRepo)
+	userUC := usecase.NewUserUsecase(userRepo)
+
+	// Initialize handlers
+	authHandler := NewAuthHandler(authUC)
+	userHandler := NewUserHandler(userUC)
+
+	// Auth routes based on Postman collection
+	authGroup := app.Group("/auth")
+	authGroup.Post("/register", authHandler.Register)
+	authGroup.Post("/login", authHandler.Login)
+
+	// User routes (protected with JWT middleware)
+	userGroup := app.Group("/user", middleware.JWTMiddleware())
+	userGroup.Get("/", userHandler.GetProfile)
+	userGroup.Put("/", userHandler.UpdateProfile)
+
+	// TODO: register other feature routes (user, toko, alamat, kategori, produk, trx)
 }
