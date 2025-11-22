@@ -25,6 +25,7 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	categoryRepo := repository.NewCategoryRepository(db)
 	productRepo := repository.NewProductRepository(db)
 	fotoProdukRepo := repository.NewFotoProdukRepository(db)
+	trxRepo := repository.NewTrxRepository(db)
 
 	// Initialize usecases
 	authUC := usecase.NewAuthUsecase(userRepo, tokoRepo)
@@ -33,6 +34,8 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	tokoUC := usecase.NewTokoUsecase(tokoRepo)
 	categoryUC := usecase.NewCategoryUsecase(categoryRepo)
 	productUC := usecase.NewProductUsecase(productRepo, fotoProdukRepo, tokoRepo)
+	trxUC := usecase.NewTrxUsecase(trxRepo, alamatRepo, productRepo)
+	provinceCityUC := usecase.NewProvinceCityUsecase()
 
 	// Initialize handlers
 	authHandler := NewAuthHandler(authUC)
@@ -41,6 +44,8 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	tokoHandler := NewTokoHandler(tokoUC)
 	categoryHandler := NewCategoryHandler(categoryUC)
 	productHandler := NewProductHandler(productUC)
+	trxHandler := NewTrxHandler(trxUC)
+	provinceCityHandler := NewProvinceCityHandler(provinceCityUC)
 
 	// Auth routes based on Postman collection
 	authGroup := app.Group("/auth")
@@ -82,6 +87,17 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	productGroup.Post("/", productHandler.CreateProduct)
 	productGroup.Put("/:id", productHandler.UpdateProduct)
 	productGroup.Delete("/:id", productHandler.DeleteProduct)
+
+	// Trx routes (protected with JWT middleware)
+	trxGroup := app.Group("/trx", middleware.JWTMiddleware())
+	trxGroup.Get("/", trxHandler.GetAllTrx)
+	trxGroup.Get("/:id", trxHandler.GetTrxByID)
+	trxGroup.Post("/", trxHandler.PostTrx)
+
+	// Province & City routes (public, proxy to EMSIFA API)
+	provCityGroup := app.Group("/provcity")
+	provCityGroup.Get("/listprovincies", provinceCityHandler.GetListProvince)
+	provCityGroup.Get("/listcities/:prov_id", provinceCityHandler.GetListCities)
 
 	// TODO: register other feature routes (user, toko, alamat, kategori, produk, trx)
 }
