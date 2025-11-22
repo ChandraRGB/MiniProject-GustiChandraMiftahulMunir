@@ -23,6 +23,8 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	tokoRepo := repository.NewTokoRepository(db)
 	alamatRepo := repository.NewAlamatRepository(db)
 	categoryRepo := repository.NewCategoryRepository(db)
+	productRepo := repository.NewProductRepository(db)
+	fotoProdukRepo := repository.NewFotoProdukRepository(db)
 
 	// Initialize usecases
 	authUC := usecase.NewAuthUsecase(userRepo, tokoRepo)
@@ -30,6 +32,7 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	alamatUC := usecase.NewAlamatUsecase(alamatRepo)
 	tokoUC := usecase.NewTokoUsecase(tokoRepo)
 	categoryUC := usecase.NewCategoryUsecase(categoryRepo)
+	productUC := usecase.NewProductUsecase(productRepo, fotoProdukRepo, tokoRepo)
 
 	// Initialize handlers
 	authHandler := NewAuthHandler(authUC)
@@ -37,6 +40,7 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	alamatHandler := NewAlamatHandler(alamatUC)
 	tokoHandler := NewTokoHandler(tokoUC)
 	categoryHandler := NewCategoryHandler(categoryUC)
+	productHandler := NewProductHandler(productUC)
 
 	// Auth routes based on Postman collection
 	authGroup := app.Group("/auth")
@@ -57,6 +61,7 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 
 	// Toko routes (public listing/detail, and update for logged-in user)
 	app.Get("/toko", tokoHandler.GetAllToko)
+	app.Get("/toko/my", middleware.JWTMiddleware(), tokoHandler.GetMyToko)
 	app.Get("/toko/:id", tokoHandler.GetTokoByID)
 	// Support both PUT /toko and PUT /toko/:id_toko (as in Postman collection)
 	app.Put("/toko", middleware.JWTMiddleware(), tokoHandler.UpdateMyToko)
@@ -69,6 +74,14 @@ func RegisterRoutes(app *fiber.App, db *gorm.DB) {
 	categoryGroup.Post("/", categoryHandler.Create)
 	categoryGroup.Put("/:id", categoryHandler.Update)
 	categoryGroup.Delete("/:id", categoryHandler.Delete)
+
+	// Product routes
+	app.Get("/product", productHandler.GetAllProduct)
+	app.Get("/product/:id", productHandler.GetProductByID)
+	productGroup := app.Group("/product", middleware.JWTMiddleware())
+	productGroup.Post("/", productHandler.CreateProduct)
+	productGroup.Put("/:id", productHandler.UpdateProduct)
+	productGroup.Delete("/:id", productHandler.DeleteProduct)
 
 	// TODO: register other feature routes (user, toko, alamat, kategori, produk, trx)
 }

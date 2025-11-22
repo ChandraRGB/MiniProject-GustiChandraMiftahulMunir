@@ -22,6 +22,7 @@ type UpdateTokoInput struct {
 type TokoUsecase interface {
 	GetAll(limit, page int, nama string) (*TokoListResult, error)
 	GetByID(id uint) (*domain.Toko, error)
+	GetMyStore(userID uint) (*domain.Toko, error)
 	UpdateMyStore(userID uint, in UpdateTokoInput) (*domain.Toko, error)
 }
 
@@ -56,6 +57,10 @@ func (uc *tokoUsecase) GetAll(limit, page int, nama string) (*TokoListResult, er
 
 func (uc *tokoUsecase) GetByID(id uint) (*domain.Toko, error) {
 	return uc.tokoRepo.GetByID(id)
+}
+
+func (uc *tokoUsecase) GetMyStore(userID uint) (*domain.Toko, error) {
+	return uc.tokoRepo.GetByUserID(userID)
 }
 
 func (uc *tokoUsecase) UpdateMyStore(userID uint, in UpdateTokoInput) (*domain.Toko, error) {

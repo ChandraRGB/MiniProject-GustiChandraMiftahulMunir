@@ -90,6 +90,49 @@ func (h *TokoHandler) GetTokoByID(c *fiber.Ctx) error {
 	})
 }
 
+// GetMyToko handles GET /toko/my to get the store owned by logged-in user.
+func (h *TokoHandler) GetMyToko(c *fiber.Ctx) error {
+	userIDVal := c.Locals("user_id")
+	userID, ok := userIDVal.(uint)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"status":  false,
+			"message": "Unauthorized",
+			"errors":  []string{"invalid user id in token"},
+			"data":    nil,
+		})
+	}
+
+	toko, err := h.tokoUC.GetMyStore(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"status":  false,
+			"message": "Failed to GET data",
+			"errors":  []string{err.Error()},
+			"data":    nil,
+		})
+	}
+	if toko == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"status":  false,
+			"message": "Failed to GET data",
+			"errors":  []string{"record not found"},
+			"data":    nil,
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"status":  true,
+		"message": "Succeed to GET data",
+		"errors":  nil,
+		"data": fiber.Map{
+			"id":        toko.ID,
+			"nama_toko": toko.NamaToko,
+			"url_foto":  toko.UrlFoto,
+		},
+	})
+}
+
 // UpdateMyToko handles PUT /toko (update store owned by logged-in user).
 func (h *TokoHandler) UpdateMyToko(c *fiber.Ctx) error {
 	userIDVal := c.Locals("user_id")
